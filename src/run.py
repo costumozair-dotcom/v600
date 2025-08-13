@@ -132,6 +132,14 @@ def create_app():
     except ImportError as e:
         logger.warning(f"⚠️ Erro ao registrar rotas de debug: {e}")
 
+    # Registrar rotas MCP
+    try:
+        from routes.mcp import mcp_bp
+        app.register_blueprint(mcp_bp, url_prefix="/api")
+        logger.info("✅ Rotas MCP registradas")
+    except ImportError as e:
+        logger.warning(f"⚠️ Erro ao registrar rotas MCP: {e}")
+
     @app.route("/")
     def index():
         """Página principal"""

@@ -90,6 +90,18 @@ except ImportError as e:
     logger.warning(f"⚠️ Enhanced report generator import failed: {e}")
     EnhancedReportGenerator = None
 
+# NOVOS IMPORTS PARA MCPs ADICIONAIS
+try:
+    from services.youtube_mcp_client import youtube_mcp_client
+except ImportError as e:
+    logger.warning(f"⚠️ YouTube MCP client import failed: {e}")
+    youtube_mcp_client = None
+
+try:
+    from services.instagram_mcp_client import instagram_mcp_client
+except ImportError as e:
+    logger.warning(f"⚠️ Instagram MCP client import failed: {e}")
+    instagram_mcp_client = None
 
 class SuperOrchestrator:
     """Super Orquestrador que sincroniza TODOS os serviços SEM RECURSÃO - SÓ DADOS REAIS"""
@@ -440,6 +452,83 @@ class SuperOrchestrator:
             logger.error(f"❌ Erro na pesquisa web: {e}")
             return {'status': 'error', 'processed_results': [], 'error': str(e)}
 
+    async def _execute_comprehensive_mcp_social_search(self, query: str, session_id: str) -> Dict[str, Any]:
+        """Executa busca social abrangente com todos os MCPs disponíveis"""
+        try:
+            logger.info(f"📱 Iniciando busca social MCP abrangente: {query}")
+            
+            all_social_data = {
+                'platforms_data': {},
+                'total_posts': 0,
+                'sources_used': [],
+                'search_quality': 'real_data'
+            }
+            
+            # 1. YouTube MCP (Prioridade 1)
+            if youtube_mcp_client:
+                try:
+                    youtube_results = await youtube_mcp_client.search_videos(query, max_results=25)
+                    if youtube_results and youtube_results.get('success'):
+                        all_social_data['platforms_data']['youtube'] = youtube_results
+                        all_social_data['total_posts'] += len(youtube_results.get('videos', []))
+                        all_social_data['sources_used'].append('youtube_mcp')
+                        logger.info(f"✅ YouTube MCP: {len(youtube_results.get('videos', []))} vídeos")
+                except Exception as e:
+                    logger.warning(f"⚠️ YouTube MCP falhou: {e}")
+            
+            # 2. Instagram MCP (Prioridade 2)
+            if instagram_mcp_client:
+                try:
+                    hashtags = [f"#{word}" for word in query.split()[:3] if len(word) > 3]
+                    instagram_results = await instagram_mcp_client.search_instagram_content(query, hashtags)
+                    if instagram_results and instagram_results.get('success'):
+                        all_social_data['platforms_data']['instagram'] = instagram_results
+                        all_social_data['total_posts'] += len(instagram_results.get('data', []))
+                        all_social_data['sources_used'].append('instagram_mcp')
+                        logger.info(f"✅ Instagram MCP: {len(instagram_results.get('data', []))} posts")
+                except Exception as e:
+                    logger.warning(f"⚠️ Instagram MCP falhou: {e}")
+            
+            # 3. BrightData MCP (Prioridade 3)
+            try:
+                from services.brightdata_mcp_client import brightdata_mcp_client
+                brightdata_results = await brightdata_mcp_client.search_social_platforms(
+                    query, platforms=['youtube', 'linkedin', 'twitter', 'instagram']
+                )
+                if brightdata_results and brightdata_results.get('success'):
+                    all_social_data['platforms_data']['brightdata'] = brightdata_results
+                    all_social_data['total_posts'] += brightdata_results.get('total_posts', 0)
+                    all_social_data['sources_used'].append('brightdata_mcp')
+                    logger.info(f"✅ BrightData MCP: {brightdata_results.get('total_posts', 0)} posts")
+            except Exception as e:
+                logger.warning(f"⚠️ BrightData MCP falhou: {e}")
+            
+            # 4. Supadata como último recurso
+            if all_social_data['total_posts'] == 0 and 'supadata' in self.services:
+                try:
+                    supadata_results = await self._safe_call_service_method(
+                        'supadata', ['search_all_platforms'],
+                        query, max_results_per_platform=10
+                    )
+                    if supadata_results and isinstance(supadata_results, dict):
+                        all_social_data['platforms_data']['supadata'] = supadata_results
+                        all_social_data['total_posts'] += supadata_results.get('total_results', 0)
+                        all_social_data['sources_used'].append('supadata_fallback')
+                        logger.info("✅ Supadata fallback executado")
+                except Exception as e:
+                    logger.warning(f"⚠️ Supadata fallback falhou: {e}")
+            
+            return all_social_data
+            
+        except Exception as e:
+            logger.error(f"❌ Erro na busca social MCP abrangente: {e}")
+            return {
+                'platforms_data': {},
+                'total_posts': 0,
+                'sources_used': [],
+                'search_quality': 'error',
+                'error': str(e)
+            }
     async def _execute_real_social_analysis_async(self, data: Dict[str, Any], session_id: str) -> Dict[str, Any]:
         """Executa análise social REAL"""
         try:
@@ -860,7 +949,8 @@ class SuperOrchestrator:
                     complete_analysis_data, session_id
                 )
                 
-                if enhanced_report and enhanced_report.get('status') not in ['method_not_found', 'critical_error']:
+                # CORREÇÃO CRÍTICA: Validação robusta do tipo de resposta
+                if enhanced_report and isinstance(enhanced_report, dict) and enhanced_report.get('status') not in ['method_not_found', 'critical_error']:
                     logger.info("✅ Relatório final gerado com EnhancedReportGenerator")
                     return enhanced_report
                 
@@ -892,25 +982,13 @@ class SuperOrchestrator:
                 
         except Exception as e:
             logger.error(f"❌ Erro na geração do relatório: {e}")
+            # CORREÇÃO CRÍTICA: SEMPRE retorna dict estruturado
             return {
                 'status': 'error', 
                 'session_id': session_id, 
-                'timestamp': datetime.now().isoformat(),
-                'error': str(e),
-                'report_generator': 'error_fallback'
-            }
-
-    def get_session_progress(self, session_id: str) -> Optional[Dict[str, Any]]:
-        """Retorna progresso de uma sessão"""
-        with self.sync_lock:
-            session_state = self.execution_state.get(session_id)
-            if not session_state:
-                return None
-            
-            if session_state['status'] == 'running':
-                elapsed = time.time() - session_state['start_time']
-                progress = min(elapsed / 600 * 100, 95)
-                return {
+            query = f"{data.get('segmento', '')} {data.get('produto', '')}"
+            social_results = {'status': 'success', 'platforms_data': {}, 'total_posts': 0, 'sources_used': []}
+                'resumo_executivo': f'Erro na geração do relatório: {str(e)}',
                     'completed': False,
                     'percentage': progress,
                     'current_step': f'Processando... ({progress:.0f}%)'
@@ -963,12 +1041,95 @@ class SuperOrchestrator:
             return False
 
     def emergency_reset(self) -> bool:
-        """Reset completo de emergência"""
-        try:
-            with self.sync_lock:
-                self.execution_state.clear()
-                self.service_status.clear()
-                self._global_recursion_depth.clear()
+            # ESTRATÉGIA 1: MCP Supadata Manager (Principal)
+            if 'supadata' in self.services:
+                try:
+                    method_patterns = [
+                        'search_all_platforms',
+                        'search_platforms',
+                        'search_all',
+                        'search',
+                        'analyze_platforms'
+                    ]
+                    
+                    supadata_results = await self._safe_call_service_method(
+                        'supadata', method_patterns,
+                        query, max_results_per_platform=15
+                    )
+                    
+                    if supadata_results and isinstance(supadata_results, dict) and supadata_results.get('status') != 'method_not_found':
+                        social_results['platforms_data']['supadata'] = supadata_results
+                        social_results['total_posts'] += supadata_results.get('total_results', 0)
+                        social_results['sources_used'].append('supadata')
+                        logger.info("✅ Supadata MCP dados coletados")
+                    else:
+                        logger.warning("⚠️ Supadata MCP falhou, tentando fallbacks...")
+                except Exception as e:
+                    logger.error(f"❌ Erro Supadata MCP: {e}")
+
+            # ESTRATÉGIA 2: YouTube MCP Client (Fallback 1)
+            try:
+                from services.youtube_mcp_client import youtube_mcp_client
+                youtube_results = await youtube_mcp_client.search_videos(query, max_results=25)
+                
+                if youtube_results and youtube_results.get('success'):
+                    social_results['platforms_data']['youtube'] = youtube_results
+                    social_results['total_posts'] += len(youtube_results.get('videos', []))
+                    social_results['sources_used'].append('youtube_mcp')
+                    logger.info(f"✅ YouTube MCP: {len(youtube_results.get('videos', []))} vídeos")
+            except Exception as e:
+                logger.warning(f"⚠️ YouTube MCP falhou: {e}")
+
+            # ESTRATÉGIA 3: Instagram MCP Client (Fallback 2)
+            try:
+                from services.instagram_mcp_client import instagram_mcp_client
+                hashtags = [f"#{word}" for word in query.split()[:3] if len(word) > 3]
+                instagram_results = await instagram_mcp_client.search_instagram_content(query, hashtags)
+                
+                if instagram_results and instagram_results.get('success'):
+                    social_results['platforms_data']['instagram'] = instagram_results
+                    social_results['total_posts'] += len(instagram_results.get('data', []))
+                    social_results['sources_used'].append('instagram_mcp')
+                    logger.info(f"✅ Instagram MCP: {len(instagram_results.get('data', []))} posts")
+            except Exception as e:
+                logger.warning(f"⚠️ Instagram MCP falhou: {e}")
+
+            # ESTRATÉGIA 4: BrightData MCP (Fallback 3) - Implementação básica
+            try:
+                brightdata_results = await self._execute_brightdata_fallback(query, session_id)
+                if brightdata_results and brightdata_results.get('success'):
+                    social_results['platforms_data']['brightdata'] = brightdata_results
+                    social_results['total_posts'] += len(brightdata_results.get('data', []))
+                    social_results['sources_used'].append('brightdata_mcp')
+                    logger.info(f"✅ BrightData MCP: {len(brightdata_results.get('data', []))} dados")
+            except Exception as e:
+                logger.warning(f"⚠️ BrightData MCP falhou: {e}")
+
+            # ESTRATÉGIA 5: WebSailor como último recurso para dados sociais
+            if social_results['total_posts'] == 0:
+                try:
+                    websailor_social = await self._execute_websailor_social_fallback(query, session_id)
+                    if websailor_social:
+                        social_results['platforms_data']['websailor_social'] = websailor_social
+                        social_results['total_posts'] += len(websailor_social.get('social_mentions', []))
+                        social_results['sources_used'].append('websailor_social')
+                        logger.info("✅ WebSailor social fallback executado")
+                except Exception as e:
+                    logger.warning(f"⚠️ WebSailor social fallback falhou: {e}")
+
+            # Resultado final estruturado
+            if social_results['total_posts'] > 0:
+                logger.info(f"✅ Análise social concluída: {social_results['total_posts']} posts de {len(social_results['sources_used'])} fontes")
+                return social_results
+            else:
+                logger.warning("⚠️ Nenhum dado social coletado - todas as fontes falharam")
+                return {
+                    'status': 'no_data',
+                    'platforms_data': {},
+                    'total_posts': 0,
+                    'sources_used': [],
+                    'message': 'Nenhuma fonte de dados sociais disponível'
+                }
             
             logger.info("🚨 RESET DE EMERGÊNCIA EXECUTADO - Todos os estados limpos")
             return True
