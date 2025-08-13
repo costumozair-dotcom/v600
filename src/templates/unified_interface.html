@@ -1,0 +1,585 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARQV30 Enhanced v3.0 - Análise Unificada Profissional</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: #1e293b;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            color: white;
+            padding: 1.5rem 0;
+            box-shadow: 0 4px 20px rgba(30, 64, 175, 0.3);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            text-align: center;
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 3rem 0;
+        }
+
+        .analysis-form {
+            background: white;
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            margin-bottom: 3rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .form-section {
+            margin-bottom: 2.5rem;
+        }
+
+        .form-section h3 {
+            color: #1e40af;
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 0.5rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            padding: 0.75rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: #f8fafc;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .analyze-button {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            color: white;
+            border: none;
+            padding: 1rem 3rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(30, 64, 175, 0.3);
+            display: block;
+            margin: 2rem auto 0;
+        }
+
+        .analyze-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(30, 64, 175, 0.4);
+        }
+
+        .analyze-button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .progress-container {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            display: none;
+            border: 1px solid #e2e8f0;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .progress-title {
+            color: #1e40af;
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        .progress-percentage {
+            color: #059669;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .progress-bar {
+            background: #e2e8f0;
+            border-radius: 10px;
+            height: 10px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #059669 0%, #10b981 100%);
+            height: 100%;
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+
+        .progress-message {
+            color: #374151;
+            font-size: 1rem;
+            padding: 1rem;
+            background: #f0f9ff;
+            border-radius: 10px;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .progress-details {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f8fafc;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .results-container {
+            background: white;
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            display: none;
+            border: 1px solid #e2e8f0;
+        }
+
+        .results-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .results-title {
+            color: #1e40af;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .results-subtitle {
+            color: #6b7280;
+            font-size: 1.1rem;
+        }
+
+        .report-preview {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .download-section {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .download-button {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            color: white;
+            text-decoration: none;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(5, 150, 105, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .download-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(5, 150, 105, 0.4);
+        }
+
+        .quality-indicators {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .quality-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .quality-score {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #059669;
+            margin-bottom: 0.5rem;
+        }
+
+        .quality-label {
+            color: #6b7280;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .alert {
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            border-left: 4px solid;
+        }
+
+        .alert-success {
+            background: #ecfdf5;
+            border-color: #10b981;
+            color: #065f46;
+        }
+
+        .alert-error {
+            background: #fef2f2;
+            border-color: #ef4444;
+            color: #991b1b;
+        }
+
+        .alert-warning {
+            background: #fffbeb;
+            border-color: #f59e0b;
+            color: #92400e;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+            text-align: center;
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-title {
+            color: #1e40af;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .feature-description {
+            color: #6b7280;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .container {
+                padding: 0 1rem;
+            }
+            
+            .analysis-form {
+                padding: 2rem;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <h1>🎯 ARQV30 Enhanced v3.0</h1>
+            <p>Sistema Profissional de Análise Unificada de Mercado - Modo Produção</p>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <!-- Formulário de Análise -->
+            <div class="analysis-form">
+                <div class="form-section">
+                    <h3>📊 Dados do Projeto</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="segmento">Segmento de Mercado *</label>
+                            <input type="text" id="segmento" name="segmento" required 
+                                   placeholder="Ex: tecnologia médica, consultoria empresarial">
+                        </div>
+                        <div class="form-group">
+                            <label for="produto">Produto/Serviço *</label>
+                            <input type="text" id="produto" name="produto" required
+                                   placeholder="Descreva seu produto ou serviço">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="preco">Preço (R$)</label>
+                            <input type="number" id="preco" name="preco" step="0.01"
+                                   placeholder="Valor do produto/serviço">
+                        </div>
+                        <div class="form-group">
+                            <label for="objetivo_receita">Objetivo de Receita Mensal (R$)</label>
+                            <input type="number" id="objetivo_receita" name="objetivo_receita" step="0.01"
+                                   placeholder="Meta de faturamento mensal">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>🎯 Público e Mercado</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="publico">Público-Alvo</label>
+                            <textarea id="publico" name="publico" 
+                                      placeholder="Descreva seu público-alvo ideal"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="concorrentes">Principais Concorrentes</label>
+                            <textarea id="concorrentes" name="concorrentes"
+                                      placeholder="Liste seus principais concorrentes"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>💰 Estratégia e Orçamento</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="orcamento_marketing">Orçamento de Marketing (R$)</label>
+                            <input type="number" id="orcamento_marketing" name="orcamento_marketing" step="0.01"
+                                   placeholder="Orçamento disponível para marketing">
+                        </div>
+                        <div class="form-group">
+                            <label for="prazo_lancamento">Prazo para Lançamento</label>
+                            <select id="prazo_lancamento" name="prazo_lancamento">
+                                <option value="">Selecione o prazo</option>
+                                <option value="imediato">Imediato (até 1 mês)</option>
+                                <option value="1-3 meses">1-3 meses</option>
+                                <option value="3-6 meses">3-6 meses</option>
+                                <option value="6-12 meses">6-12 meses</option>
+                                <option value="mais de 12 meses">Mais de 12 meses</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>📋 Informações Adicionais</h3>
+                    <div class="form-group">
+                        <label for="dados_adicionais">Dados Complementares</label>
+                        <textarea id="dados_adicionais" name="dados_adicionais" 
+                                  placeholder="Qualquer informação adicional relevante para a análise"></textarea>
+                    </div>
+                </div>
+
+                <button type="button" class="analyze-button" onclick="executeUnifiedAnalysis()">
+                    🚀 Executar Análise Unificada Completa
+                </button>
+            </div>
+
+            <!-- Container de Progresso -->
+            <div id="progressContainer" class="progress-container">
+                <div class="progress-header">
+                    <div class="progress-title">Executando Análise Unificada</div>
+                    <div class="progress-percentage" id="progressPercentage">0%</div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-message" id="progressMessage">
+                    Preparando análise...
+                </div>
+                <div class="progress-details" id="progressDetails" style="display: none;">
+                    <strong>Detalhes:</strong>
+                    <ul id="progressDetailsList"></ul>
+                </div>
+            </div>
+
+            <!-- Container de Resultados -->
+            <div id="resultsContainer" class="results-container">
+                <div class="results-header">
+                    <div class="results-title">Análise Concluída com Sucesso! 🎉</div>
+                    <div class="results-subtitle">Relatório profissional gerado com dados únicos e personalizados</div>
+                </div>
+
+                <div class="quality-indicators" id="qualityIndicators">
+                    <!-- Indicadores de qualidade serão inseridos aqui -->
+                </div>
+
+                <div class="report-preview" id="reportPreview">
+                    <!-- Preview do relatório será inserido aqui -->
+                </div>
+
+                <div class="download-section">
+                    <a href="#" class="download-button" id="downloadHtml">
+                        📄 Baixar Relatório HTML
+                    </a>
+                    <a href="#" class="download-button" id="downloadJson">
+                        📊 Baixar Dados JSON
+                    </a>
+                    <button class="download-button" onclick="startNewAnalysis()">
+                        🔄 Nova Análise
+                    </button>
+                </div>
+            </div>
+
+            <!-- Features Grid -->
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🔍</div>
+                    <div class="feature-title">Pesquisa Unificada</div>
+                    <div class="feature-description">
+                        Busca integrada com Exa, Alibaba WebSailor, Google e múltiplas fontes
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🧠</div>
+                    <div class="feature-title">19 Drivers Mentais</div>
+                    <div class="feature-description">
+                        Análise psicológica profunda com drivers mentais personalizados
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📱</div>
+                    <div class="feature-title">Redes Sociais</div>
+                    <div class="feature-description">
+                        Análise completa do YouTube, Twitter, LinkedIn e Instagram
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <div class="feature-title">Avatar Ultra-Detalhado</div>
+                    <div class="feature-description">
+                        Criação de persona baseada em dados reais do mercado
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📈</div>
+                    <div class="feature-title">Análise Forense</div>
+                    <div class="feature-description">
+                        Investigação profunda de padrões e oportunidades ocultas
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔮</div>
+                    <div class="feature-title">Predições Futuras</div>
+                    <div class="feature-description">
+                        Projeções específicas para os próximos 36 meses
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/static/js/unified_analysis.js"></script>
+    <script>
+        // Logs de inicialização
+        console.log('🔬 Sistema de Análise Moderno carregado');
+        console.log('🚀 ARQV30 Enhanced v3.0 - Sistema Moderno Inicializado');
+        console.log('🎯 Interface Moderna Carregada');
+    </script>
+</body>
+</html>
